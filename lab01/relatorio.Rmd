@@ -1,0 +1,31 @@
+---
+title: "Lab01 - Tiaraju"
+author: "Tiaraju Smaneoto"
+output: html_notebook
+---
+
+```{r echo = FALSE}
+library(dplyr, warn.conflicts = F)
+library(readr)
+library(ggplot2)
+library(gmodels)
+```
+
+#LAB 01
+
+  Questões a serem respondidas:
+a. Em que tipo de despesas os parlamentares gastam mais recursos de sua cota?
+b. Que tipos de despesa tem valores que mais variam quando comparamos os deputados? 
+
+-------
+
+#Dados
+```{r}
+
+```
+
+
+
+
+
+
