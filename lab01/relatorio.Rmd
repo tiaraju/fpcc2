@@ -15,14 +15,33 @@ library(gmodels)
 
   Questões a serem respondidas:
 a. Em que tipo de despesas os parlamentares gastam mais recursos de sua cota?
+
 b. Que tipos de despesa tem valores que mais variam quando comparamos os deputados? 
 
 -------
 
 #Dados
+Os dados que serão analisados serão restringidos aos deputados baianos. 
+
+```{r}
+dados = read.csv("dados//AnoAtual.csv")  %>% filter(sgUF=="BA")
+
+#dados %>%  ggplot() + geom_bar(mapping=aes(x=txtDescricao), stat="count") + coord_flip()
+```
+
+
 ```{r}
 
+gasto_por_desc = aggregate(dados$vlrLiquido ~ dados$txtDescricao, gasto_por_desc, sum)
+
+gasto_por_desc = gasto_por_desc %>% select(descricao=`dados$txtDescricao`, valorLiquido=`dados$vlrLiquido`)
+
+gasto_por_desc %>% ggplot(aes(x=descricao, y=valorLiquido, fill=descricao)) +
+  geom_bar(stat="identity") + theme_minimal()
+
 ```
+
+
 
 
 
