@@ -23,24 +23,32 @@ b. Que tipos de despesa tem valores que mais variam quando comparamos os deputad
 #Dados
 Os dados que serão analisados serão restringidos aos deputados baianos. 
 
+Primeiramente, vamos observar os tipos de gasto mais frequentes entre os deputados da Bahia:
+
 ```{r}
 dados = read.csv("dados//AnoAtual.csv")  %>% filter(sgUF=="BA")
-
-#dados %>%  ggplot() + geom_bar(mapping=aes(x=txtDescricao), stat="count") + coord_flip()
+dados %>%  ggplot() + geom_bar(mapping=aes(x=txtDescricao), stat="count") + coord_flip()
 ```
+Podemos observar que ~
 
 
+Agora, vamos observar onde se concentram os maiores gastos:
 ```{r}
+gasto_por_desc <- aggregate(dados$vlrLiquido ~ dados$txtDescricao, dados, sum)
 
-gasto_por_desc = aggregate(dados$vlrLiquido ~ dados$txtDescricao, gasto_por_desc, sum)
+gasto_por_desc <- gasto_por_desc %>% select(descricao=`dados$txtDescricao`, valorLiquido=`dados$vlrLiquido`)
 
-gasto_por_desc = gasto_por_desc %>% select(descricao=`dados$txtDescricao`, valorLiquido=`dados$vlrLiquido`)
-
+#paleta de cores 
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"
+                , "#00008B", "#E7298A", "#00FF00", "#FF0000", "#545454", "#0000FF", "#E6AB02")
+  
 gasto_por_desc %>% ggplot(aes(x=descricao, y=valorLiquido, fill=descricao)) +
-  geom_bar(stat="identity") + theme_minimal()
+  geom_bar(stat="identity") + theme_minimal() + scale_fill_manual(values=cbbPalette)
 
 ```
+Podemos ver aqui que a maior quantidade de verba //TODO é com //TODO
 
+//TODO analisar gasto por deputado
 
 
 
