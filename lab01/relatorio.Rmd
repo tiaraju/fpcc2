@@ -72,6 +72,17 @@ gastos_medio_por_dep_partido %>% ggplot(aes(x=reorder(sgPartido,-(total_gasto/co
 
 Olhando o gasto pelo número de deputados, percebemos que , na verdade, o partido com maior gasto é o PV. O PT deixou o topo. Já o PP continua como segundo colocado em ambos os casos.
 
+O partido PV tem apenas um deputado que recebe todo o recurso. Logo, não faz sentido analisarmos o gasto por deputado.
+Faremos isso então para o segundo  colocado(PP)
+
+```{r}
+
+gastos_pp = dados %>% filter(sgPartido=="PP") %>% group_by(txNomeParlamentar) %>% summarise(gasto_total = sum(vlrLiquido))
+
+gastos_pp %>% ggplot(aes(x=reorder(txNomeParlamentar,-gasto_total),y=gasto_total)) + geom_bar(stat="identity")
+
+```
+
 
 
 
