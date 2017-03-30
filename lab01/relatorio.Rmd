@@ -27,7 +27,7 @@ Primeiramente, vamos observar os tipos de gasto mais frequentes entre os deputad
 
 ```{r}
 dados = read.csv("dados//AnoAtual.csv")  %>% filter(sgUF=="BA")
-dados %>%  ggplot() + geom_bar(mapping=aes(x=txtDescricao), stat="count") + coord_flip()
+dados %>%  ggplot() + geom_bar(mapping=aes(x=txtDescricao)) + coord_flip()
 ```
 Podemos observar que ~
 
@@ -37,19 +37,40 @@ Agora, vamos observar onde se concentram os maiores gastos:
 gasto_por_desc <- aggregate(dados$vlrLiquido ~ dados$txtDescricao, dados, sum)
 
 gasto_por_desc <- gasto_por_desc %>% select(descricao=`dados$txtDescricao`, valorLiquido=`dados$vlrLiquido`)
-
 #paleta de cores 
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"
                 , "#00008B", "#E7298A", "#00FF00", "#FF0000", "#545454", "#0000FF", "#E6AB02")
   
-gasto_por_desc %>% ggplot(aes(x=descricao, y=valorLiquido, fill=descricao)) +
-  geom_bar(stat="identity") + theme_minimal() + scale_fill_manual(values=cbbPalette)
+gasto_por_desc %>% ggplot(aes(x=reorder(descricao,-valorLiquido), y=valorLiquido, fill=reorder(descricao,-valorLiquido) )) +
+  geom_bar(stat="identity") + theme(axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank())+ scale_fill_manual(values=cbbPalette, name="Descrição") 
 
 ```
-Podemos ver aqui que a maior quantidade de verba //TODO é com //TODO
+#Podemos ver aqui que a maior quantidade de verba #//TODO é com //TODO
 
-//TODO analisar gasto por deputado
+#//TODO analisar gasto por deputado
 
+Vamos analisar os gastos agora por partido
+```{r}
+
+gastos_por_partido = dados %>% group_by(sgPartido) %>% summarise(total_gasto = sum(vlrLiquido)) %>% arrange(-total_gasto)
+
+gastos_por_partido %>% ggplot(aes(x=reorder(sgPartido,-total_gasto), y = total_gasto)) + geom_bar(stat="identity")
+```
+
+Observamos que nesse caso os dois partidos que mais gastam são o PT e o PP. Todavia, não consideramos, no caso acima, o número de deputados por partido. 
+
+Vamos agora considerar o gasto médio do partido, sendo este proporcional ao número de deputados do mesmo:
+
+```{r}
+#check the calculations
+gastos_medio_por_dep_partido = dados %>% group_by(sgPartido, txNomeParlamentar) %>% summarise(total_gasto = sum(vlrLiquido)) %>% group_by(sgPartido) %>% summarise(count=n(), total_gasto=sum(total_gasto)) 
+
+gastos_medio_por_dep_partido %>% ggplot(aes(x=reorder(sgPartido,-(total_gasto/count)),y=(total_gasto/count))) +
+  geom_bar(stat="identity")
+```
+
+
+Olhando o gasto pelo número de deputados, percebemos que , na verdade, o partido com maior gasto é o PV. O PT deixou o topo. Já o PP continua como segundo colocado em ambos os casos.
 
 
 
