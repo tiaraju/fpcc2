@@ -1,5 +1,5 @@
 ---
-title: "Lab 01 - FPCC 2"
+title: "Lab 01.2 - FPCC 2"
 author: "Tiaraju Smaneoto"
 output: html_notebook
 ---
@@ -22,25 +22,32 @@ library(stringr)
 -------
 
 #Dados
-Os dados que serão analisados serão restringidos aos deputados baianos. 
+Os dados que serão analisados serão restringidos aos parlamentares da unidade federativa da Bahia (BBMP) :)
+
+
+
+####a. Em que tipo de despesas os parlamentares gastam mais recursos de sua cota?
 
 Primeiramente, vamos observar os tipos de gasto mais frequentes entre os deputados da Bahia.
 Para isso, analisaremos a variável txtDescricao, que especifica a descrição do gasto. Agruparemos por tal variável para contar o número de ocorrências.
 
 Uma ressalva importante é que tivemos que fazer merge das variáveis Emissão de Bilhete Aéreo e Passagens Aéreas, uma vez que, no contexto da análise, os dois se referem ao mesmo tipo gasto.
 
-```{r}
-dados = read.csv("dados//AnoAtual.csv")  %>% filter(sgUF=="BA")
+Outro ponto importante considerado foi a presença de valores negativos para a variável vlrLiquido. Todavia, foi averiguado, segundo a descrição das variáveis, que o valor negativo representa o valor de um bilhete aéreo que foi emitido em substituição de outro não usado, o que não causa problema na nossa análise.
 
+```{r}
+
+dados = read.csv("dados//AnoAtual.csv")  %>% filter(sgUF=="BA")
 dados$txtDescricao[dados$txtDescricao == "Emissão Bilhete Aéreo"] <- "PASSAGENS AÉREAS"
 dados$numSubCota[dados$numSubCota == 9] <- 999
 dados = dados %>% mutate(txtDescricao=str_to_title(txtDescricao))
 dados %>%  ggplot() + geom_bar(mapping=aes(x=txtDescricao)) + coord_flip()
 ```
+
 Podemos observar que, em número de observações, Combustíveis e lubrificantes é o tipo de despesa que mais aparece, seguido por Emissão de bilhete aéreo.
 
 
-Agora, respondendo a primeira questão, vamos observar onde se concentram os maiores gastos.
+Agora, respondendo à primeira questão, vamos observar onde se concentram os maiores gastos.
 Para tal, analisaremos a variável vlrLiquido agrupada por tipo de descrição.
 
 O resultado é mostrado no gráfico abaixo:
@@ -68,10 +75,31 @@ Podemos observar que os três tipos de despesas onde os parlamentares mais gasta
 
 Agora, respondendo à segunda questão:
 
+Para responder a segunda questão, analisaremos as variáveis txNomeParlamentar, txDescricao e vlrLiquido que representam: o Nome do parlamentar, a descrição do gasto da cota, e o valor gasto, respectivamente.
+Para tal, agruparemos as variáveis de modo a calcular o desvio padrão das categorias de gasto(txDecricao) entre os deputados.
+
+O maior desvio padrão encontrado nos mostrará a categoria que mais varia entre os deputados.
+
 ```{r}
-  dados_por_despesa = dados %>% group_by(txNomeParlamentar, txtDescricao) %>% summarise(vlrLiquido=sum(vlrLiquido))# %>% group_by(txtDescricao,txNomeParlamentar) %>% summarise(vlrLiquido=sum(vlrLiquido))
-  dados_por_despesa %>% View()
+
+  group_por_desc = dados %>%
+  select(txNomeParlamentar, txtDescricao, vlrLiquido) %>%
+  group_by(txNomeParlamentar, txtDescricao) %>%
+  summarise(total_gasto = sum(vlrLiquido))
+
+  std_dep_ba = group_por_desc %>%
+  group_by(txtDescricao) %>%
+  summarise(std = sd(total_gasto))
+
+ggplot(std_dep_ba, aes(x=reorder(txtDescricao, std), y=std)) + 
+  geom_bar(stat = "identity") +
+  labs(x='Descrição de Gasto', y='Desvio Padrão')+
+  coord_flip()
 ```
 
 
 
+Podemos ver no gráfico acima que, as três categorias em que o valor Liquido mais varia, entre os parlamentares, são:
+* Divulgação Da Atividade Parlamentar
+* Consultorias, Pesquisa e Trabalhos Técnicos
+* Locação Ou fretamento de Veículos Automotores
