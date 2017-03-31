@@ -1,5 +1,5 @@
 ---
-title: "Lab01 - Tiaraju"
+title: "Lab 01 - FPCC 2"
 author: "Tiaraju Smaneoto"
 output: html_notebook
 ---
@@ -9,30 +9,42 @@ library(dplyr, warn.conflicts = F)
 library(readr)
 library(ggplot2)
 library(gmodels)
+library(stringr)
 ```
 
-#LAB 01
+#Questões a serem respondidas:
 
-  Questões a serem respondidas:
-a. Em que tipo de despesas os parlamentares gastam mais recursos de sua cota?
+####a. Em que tipo de despesas os parlamentares gastam mais recursos de sua cota?
 
-b. Que tipos de despesa tem valores que mais variam quando comparamos os deputados? 
+
+####b. Que tipos de despesa tem valores que mais variam quando comparamos os deputados? 
 
 -------
 
 #Dados
 Os dados que serão analisados serão restringidos aos deputados baianos. 
 
-Primeiramente, vamos observar os tipos de gasto mais frequentes entre os deputados da Bahia:
+Primeiramente, vamos observar os tipos de gasto mais frequentes entre os deputados da Bahia.
+Para isso, analisaremos a variável txtDescricao, que especifica a descrição do gasto. Agruparemos por tal variável para contar o número de ocorrências.
+
+Uma ressalva importante é que tivemos que fazer merge das variáveis Emissão de Bilhete Aéreo e Passagens Aéreas, uma vez que, no contexto da análise, os dois se referem ao mesmo tipo gasto.
 
 ```{r}
 dados = read.csv("dados//AnoAtual.csv")  %>% filter(sgUF=="BA")
+
+dados$txtDescricao[dados$txtDescricao == "Emissão Bilhete Aéreo"] <- "PASSAGENS AÉREAS"
+dados$numSubCota[dados$numSubCota == 9] <- 999
+dados = dados %>% mutate(txtDescricao=str_to_title(txtDescricao))
 dados %>%  ggplot() + geom_bar(mapping=aes(x=txtDescricao)) + coord_flip()
 ```
-Podemos observar que ~
+Podemos observar que, em número de observações, Combustíveis e lubrificantes é o tipo de despesa que mais aparece, seguido por Emissão de bilhete aéreo.
 
 
-Agora, vamos observar onde se concentram os maiores gastos:
+Agora, respondendo a primeira questão, vamos observar onde se concentram os maiores gastos.
+Para tal, analisaremos a variável vlrLiquido agrupada por tipo de descrição.
+
+O resultado é mostrado no gráfico abaixo:
+
 ```{r}
 gasto_por_desc <- aggregate(dados$vlrLiquido ~ dados$txtDescricao, dados, sum)
 
@@ -45,46 +57,21 @@ gasto_por_desc %>% ggplot(aes(x=reorder(descricao,-valorLiquido), y=valorLiquido
   geom_bar(stat="identity") + theme(axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank())+ scale_fill_manual(values=cbbPalette, name="Descrição") 
 
 ```
-#Podemos ver aqui que a maior quantidade de verba #//TODO é com //TODO
+Podemos observar que os três tipos de despesas onde os parlamentares mais gastam seus recursos são:
 
-#//TODO analisar gasto por deputado
+* Divulgação de atividade parlamentar
+* Passagens Aéreas
+* Locação ou fretamento de Veículos
 
-Vamos analisar os gastos agora por partido
-```{r}
+####b. Que tipos de despesa tem valores que mais variam quando comparamos os deputados? 
 
-gastos_por_partido = dados %>% group_by(sgPartido) %>% summarise(total_gasto = sum(vlrLiquido)) %>% arrange(-total_gasto)
 
-gastos_por_partido %>% ggplot(aes(x=reorder(sgPartido,-total_gasto), y = total_gasto)) + geom_bar(stat="identity")
-```
-
-Observamos que nesse caso os dois partidos que mais gastam são o PT e o PP. Todavia, não consideramos, no caso acima, o número de deputados por partido. 
-
-Vamos agora considerar o gasto médio do partido, sendo este proporcional ao número de deputados do mesmo:
+Agora, respondendo à segunda questão:
 
 ```{r}
-#check the calculations
-gastos_medio_por_dep_partido = dados %>% group_by(sgPartido, txNomeParlamentar) %>% summarise(total_gasto = sum(vlrLiquido)) %>% group_by(sgPartido) %>% summarise(count=n(), total_gasto=sum(total_gasto)) 
-
-gastos_medio_por_dep_partido %>% ggplot(aes(x=reorder(sgPartido,-(total_gasto/count)),y=(total_gasto/count))) +
-  geom_bar(stat="identity")
+  dados_por_despesa = dados %>% group_by(txNomeParlamentar, txtDescricao) %>% summarise(vlrLiquido=sum(vlrLiquido))# %>% group_by(txtDescricao,txNomeParlamentar) %>% summarise(vlrLiquido=sum(vlrLiquido))
+  dados_por_despesa %>% View()
 ```
-
-
-Olhando o gasto pelo número de deputados, percebemos que , na verdade, o partido com maior gasto é o PV. O PT deixou o topo. Já o PP continua como segundo colocado em ambos os casos.
-
-O partido PV tem apenas um deputado que recebe todo o recurso. Logo, não faz sentido analisarmos o gasto por deputado.
-Faremos isso então para o segundo  colocado(PP)
-
-```{r}
-
-gastos_pp = dados %>% filter(sgPartido=="PP") %>% group_by(txNomeParlamentar) %>% summarise(gasto_total = sum(vlrLiquido))
-
-gastos_pp %>% ggplot(aes(x=reorder(txNomeParlamentar,-gasto_total),y=gasto_total)) + geom_bar(stat="identity")
-
-```
-
-
-
 
 
 
