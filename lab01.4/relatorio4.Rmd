@@ -1,0 +1,27 @@
+---
+title: "relatório4"
+author: "tiaraju"
+date: "6 de abril de 2017"
+output: html_notebook
+---
+
+```{r echo = FALSE}
+library(dplyr, warn.conflicts = F)
+library(readr)
+library(ggplot2)
+library(gmodels)
+```
+```{r}
+todos_os_dep = read_csv("dados//AnoAtual.csv")
+```
+
+
+#Laboratorio 1 - checkpoint 4 
+#Fundamentos de Pesquisa em Ciência da Computação 2
+
+## 1.Considerando o gasto médio ( gasto do partido/ número de deputados), quais os partidos que mais gastam?
+```{r}
+num_dep_por_partido = todos_os_dep %>% select(sgPartido, txNomeParlamentar) %>% distinct(txNomeParlamentar, sgPartido) %>% group_by(sgPartido) %>% summarise(total = n())
+num_dep_por_partido %>% View()
+
+## 2.Qual o estado com maior gasto médio ( gasto total do estado / número de deputados do estado) ?
