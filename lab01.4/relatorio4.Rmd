@@ -1,6 +1,5 @@
 ---
-title: "relatório4"
-author: "tiaraju"
+title: "Relatório 4"
 date: "6 de abril de 2017"
 output: html_notebook
 ---
@@ -11,17 +10,113 @@ library(readr)
 library(ggplot2)
 library(gmodels)
 ```
-```{r}
+```{r echo = FALSE}
 todos_os_dep = read_csv("dados//AnoAtual.csv")
 ```
 
 
 #Laboratorio 1 - checkpoint 4 
-#Fundamentos de Pesquisa em Ciência da Computação 2
+##Fundamentos de Pesquisa em Ciência da Computação 2
+
+Os dados utilizados para análise desse relatório foram obtidos do site da Câmara de deputados.
+O línk para os dados: http://www2.camara.leg.br/transparencia/cota-para-exercicio-da-atividade-parlamentar/dados-abertos-cota-parlamentar
+
+Foram fórumuladas, a priori, duas perguntas para serem respondidas.
+Outras duas, que surgiram durante as investigações, foram também respondidas.
+
+Agora, observemos algumas das variáveis em estudo:
+
+Tipo de despesas:
+```{r}
+todos_os_dep %>% select(txtDescricao) %>% distinct()
+todos_os_dep$txtDescricao[todos_os_dep$txtDescricao == "Emissão Bilhete Aéreo"] <- "PASSAGENS AÉREAS"
+
+```
+Percebemos aqui uma incoerência entre Emissão Bilhete Aéreo	e PASSAGENS_AEREAS. Percebemos que possívelmente se trata do mesmo tipo de gasto. Os devidos tratamentos foram feitos.
+Partidos:
+```{r}
+todos_os_dep %>% select(sgPartido) %>% distinct()
+
+```
+
+Parlamentares:
+```{r}
+todos_os_dep %>% select(txNomeParlamentar) %>% distinct()
+
+```
+
+Agora, passemos às perguntas:
 
 ## 1.Considerando o gasto médio ( gasto do partido/ número de deputados), quais os partidos que mais gastam?
+Vamos analisar os gastos agora por partido
 ```{r}
-num_dep_por_partido = todos_os_dep %>% select(sgPartido, txNomeParlamentar) %>% distinct(txNomeParlamentar, sgPartido) %>% group_by(sgPartido) %>% summarise(total = n())
-num_dep_por_partido %>% View()
+
+gastos_por_partido = todos_os_dep %>% group_by(sgPartido) %>% summarise(total_gasto = sum(vlrLiquido)) %>% arrange(-total_gasto)
+
+gastos_por_partido %>% ggplot(aes(x=reorder(sgPartido,-total_gasto), y = total_gasto)) + geom_bar(stat="identity") + coord_flip()
+```
+
+Observamos que nesse caso os dois partidos que mais gastam são o PT e o PMDB. Todavia, não consideramos, no caso acima, o número de deputados por partido. 
+
+Vamos agora considerar o gasto médio do partido, sendo este proporcional ao número de deputados do mesmo:
+
+```{r}
+gastos_medio_por_dep_partido = todos_os_dep %>% group_by(sgPartido, txNomeParlamentar) %>% summarise(total_gasto = sum(vlrLiquido)) %>% group_by(sgPartido) %>% summarise(count=n(), total_gasto=sum(total_gasto)) 
+
+gastos_medio_por_dep_partido %>% ggplot(aes(x=reorder(sgPartido,-(total_gasto/count)),y=(total_gasto/count))) +
+  geom_bar(stat="identity") + coord_flip()
+```
+
+
+Olhando o gasto pelo número de deputados, percebemos que , na verdade, o partido com maior gasto é o PRP. O PT deixou o topo. 
+
+Vamos agora analisar o gasto por deputado do partido com o segundo maior gasto, dado que, o primeiro com maior gasto possuí apenas um deputado, o sr NIVALDO ALBUQUERQUE.
+
+Para o segundo com maior gasto:
+```{r}
+
+gastos_pp = todos_os_dep %>% filter(sgPartido=="PEN") %>% group_by(txNomeParlamentar) %>% summarise(gasto_total = sum(vlrLiquido))
+
+gastos_pp %>% ggplot(aes(x=reorder(txNomeParlamentar,-gasto_total),y=gasto_total)) + geom_bar(stat="identity") + coord_flip()
+
+```
+
+
+
 
 ## 2.Qual o estado com maior gasto médio ( gasto total do estado / número de deputados do estado) ?
+```{r}
+gastos_medio_por_estado_partido = todos_os_dep %>% group_by(txNomeParlamentar, sgUF) %>% summarise(total_gasto = sum(vlrLiquido)) %>% group_by(sgUF) %>% summarise(count=n(), total_gasto=sum(total_gasto)) 
+
+gastos_medio_por_estado_partido %>% ggplot(aes(x=reorder(sgUF,-(total_gasto/count)),y=(total_gasto/count))) +
+  geom_bar(stat="identity") + coord_flip()
+```
+Agrupados por estado, percebemos que os estados do Acre, Maranhão e Rio Grande do Norte são os estados com maior gasto porporcional ao número de deputados. 
+O resultado chega a ser surpreendente, dado que os grandes centros não estão presentes no topo.
+
+## 3. Quais os deputados que mais gastam, excedendo as cotas?
+
+```{r}
+dep_mais_gastam = todos_os_dep %>% group_by(txNomeParlamentar, sgPartido) %>%   
+                          summarise(totalDocumento = sum(vlrDocumento), 
+                              totalGlosa = sum(vlrGlosa), 
+                              totalLiquido = sum(vlrLiquido)) %>% arrange(desc(totalDocumento))
+
+dep_mais_gastam %>% ggplot(aes(x=totalGlosa, y=totalDocumento), fill=txNomeParlamentar) + geom_point()
+
+```
+Podemos perceber que a maior concentração se encontra entre 30.000 e 100.000 reais.
+```{r}
+dep_mais_gastam[1:10,] %>% ggplot(aes(x=reorder(txNomeParlamentar, totalDocumento), y=totalDocumento)) + geom_bar(stat='identity') + coord_flip()
+```
+
+
+Os três deputados que mais gastam são:
+  
+  
+  1       FRANCISCO CHAPADINHA       
+  2       PEDRO FERNANDES                  
+  3       DAVIDSON MAGALHÃES    
+  
+  
+#4.

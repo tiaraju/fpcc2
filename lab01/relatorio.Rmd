@@ -100,6 +100,7 @@ ggplot(std_dep_ba, aes(x=reorder(txtDescricao, std), y=std)) +
 
 
 Podemos ver no gráfico acima que, as três categorias em que o valor Liquido mais varia, entre os parlamentares, são:
+
 * Divulgação Da Atividade Parlamentar
 * Consultorias, Pesquisa e Trabalhos Técnicos
 * Locação Ou fretamento de Veículos Automotores
