@@ -18,6 +18,8 @@ require(ggdendro)
 require(corrplot)
 require(reshape2)
 require(plotly)
+library(devtools)
+library(ggbiplot)
 
 ```
 
@@ -28,29 +30,17 @@ Vamos carregar e observar o dataset disponibilizado:
 ```{r}
 capes = read_csv("dados//capes-cacc.csv")
 
-capes[0:10] %>% gather(key = "variavel", value = "valor", -Sigla, -`Tem doutorado`, -Instituição, -Programa) %>% 
+capes[0:18] %>% gather(key = "variavel", value = "valor", -Sigla, -`Tem doutorado`, -Instituição, -Programa) %>% 
     ggplot(aes(x = valor)) + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
-    facet_grid(. ~ variavel, scales = "free_x")
+    facet_wrap(~ variavel, scales = "free_x", ncol=7)
 
-capes[10:17] %>% gather(key = "variavel", value = "valor") %>% 
+capes[18:31] %>% gather(key = "variavel", value = "valor") %>% 
     ggplot(aes(x = valor)) + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
-    facet_grid(. ~ variavel, scales = "free_x")
-
-capes[17:24] %>% gather(key = "variavel", value = "valor") %>% 
-    ggplot(aes(x = valor)) + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
-    facet_grid(. ~ variavel, scales = "free_x")
-
-capes[24:31] %>% gather(key = "variavel", value = "valor") %>% 
-    ggplot(aes(x = valor)) + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
-    facet_grid(. ~ variavel, scales = "free_x")
+    facet_wrap(~ variavel, scales = "free_x", ncol=7)
 
 
 capes$Teses[is.na(capes$Teses)] = 0
@@ -68,8 +58,8 @@ scaled_capes = filtered_capes %>% mutate_at(vars(`Nível`:periodicos_A1), funs(a
 
 Analisando as variáveis, escolhemos para o agrupamento, as seguintes:
 
-- docentes
-- trabalhos_produzidos
+- docentes ( docentes_colaboradores + docentes permanentes + docentes visitantes)
+- trabalhos_produzidos ( teses + dissertações)
 - Nível
 - Artigos em conferencia
 - periodicos_A1
@@ -91,8 +81,8 @@ Primeiramente vamos estimar um número de grupos para o K-means
 ```{r}
 
 # Determine number of clusters
-wss <- (nrow(scaled[3:9])-1)*sum(apply(ppg_scaled[3:9],2,var))
-for (i in 2:15) wss[i] <- sum(kmeans(ppg_scaled[3:9], 
+wss <- (nrow(scaled_capes[3:7])-1)*sum(apply(scaled_capes[3:7],2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(scaled_capes[3:7], 
   	centers=i)$withinss)
 plot(1:15, wss, type="b", xlab="Number of Clusters",
   ylab="Within groups sum of squares")
@@ -136,4 +126,32 @@ ggplotly(parallel_plot)
 ###MISSING ANALYSIS
 
 
-##MISSING DIMENSION REDUCTION
+##Redução de Dimensionalidade
+
+Dado que em nosso agrupamento consideramos 5 variáveis, precisamos de uma maneira legal de visualizar isso, uma vez que temos uma limitação que não nos permite visualizar as 5 facilmente. Para isso, faremos uso de redução de dimensionalidade.
+
+Para tal, utilizaremos a técnica PCA(principal component analysis)
+
+```{r}
+ppg.pca <- prcomp(scaled_capes[3:7],center = TRUE) 
+print(ppg.pca)
+plot(ppg.pca, type = "l")
+```
+
+
+##ANALYSIS
+
+```{r}
+ppg.groups = scaled_capes[2, 6] #fit.cluster column
+pca_plot <- ggbiplot(ppg.pca, obs.scale = 1, var.scale = 1, 
+              groups = ppg.groups, ellipse = TRUE, 
+              circle = FALSE) + 
+  scale_color_continuous(name = '') + 
+  theme(legend.direction = 'horizontal', 
+               legend.position = 'top')
+print(pca_plot)
+```
+
+
+
+
