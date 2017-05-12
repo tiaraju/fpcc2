@@ -1,0 +1,139 @@
+---
+title: "lab03_03"
+output: html_notebook
+---
+
+
+##Bibliotecas que usaremos
+
+Aqui importamos as bibliotecas que usaremos
+```{r echo=FALSE}
+require(tidyverse) # ggplot2, tidyr, dplyr, etc
+require(broom) # facilita lidar com modelos e trata o resultado do kmeans como modelo
+require(ggfortify, quietly = TRUE) # plots para modelos
+require(GGally, quietly = TRUE)
+require(knitr, quietly = TRUE)
+require(cluster)
+require(ggdendro)
+require(corrplot)
+require(reshape2)
+require(plotly)
+
+```
+
+##Dados
+Os dados em questão aqui são dados disponibilizados pela CAPES, utilizados na avaliação de cursos de pós-graduação das universidades brasileiras.
+
+Vamos carregar e observar o dataset disponibilizado:
+```{r}
+capes = read_csv("dados//capes-cacc.csv")
+
+capes[0:10] %>% gather(key = "variavel", value = "valor", -Sigla, -`Tem doutorado`, -Instituição, -Programa) %>% 
+    ggplot(aes(x = valor)) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_grid(. ~ variavel, scales = "free_x")
+
+capes[10:17] %>% gather(key = "variavel", value = "valor") %>% 
+    ggplot(aes(x = valor)) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_grid(. ~ variavel, scales = "free_x")
+
+capes[17:24] %>% gather(key = "variavel", value = "valor") %>% 
+    ggplot(aes(x = valor)) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_grid(. ~ variavel, scales = "free_x")
+
+capes[24:31] %>% gather(key = "variavel", value = "valor") %>% 
+    ggplot(aes(x = valor)) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_grid(. ~ variavel, scales = "free_x")
+
+
+capes$Teses[is.na(capes$Teses)] = 0
+capes$Dissertacoes[is.na(capes$Dissertacoes)] = 0
+
+
+filtered_capes =  capes %>% mutate(docentes=`Docentes permanentes`+`Docentes colaboradores`+`Docentes visitantes`, trabalhos_produzidos=Teses+Dissertacoes) %>% 
+  select(Sigla, Programa, `Nível`, docentes, `Artigos em conf`, trabalhos_produzidos, periodicos_A1) 
+
+scaled_capes = filtered_capes %>% mutate_at(vars(`Nível`:periodicos_A1), funs(as.numeric(scale(.))))
+
+
+
+```
+
+Analisando as variáveis, escolhemos para o agrupamento, as seguintes:
+
+- docentes
+- trabalhos_produzidos
+- Nível
+- Artigos em conferencia
+- periodicos_A1
+
+
+Visualizando a relação entre as variáveis agora:
+```{r}
+cor(filtered_capes %>% select(-Programa, -Sigla)) %>% corrplot(method = "number", type = "lower")
+
+```
+
+Podemos perceber uma forte correlação entre as variáveis, sendo a menor delas entre o número de docentes e o nível do programa de 0.67, que pode ser considerada alta.
+
+##Agrupamento
+
+Uma vez escolhida as variáveis para o agrupamento, partimos para tal:
+
+Primeiramente vamos estimar um número de grupos para o K-means
+```{r}
+
+# Determine number of clusters
+wss <- (nrow(scaled[3:9])-1)*sum(apply(ppg_scaled[3:9],2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(ppg_scaled[3:9], 
+  	centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+  ylab="Within groups sum of squares")
+
+set.seed(123)
+explorando_k = tibble(k = 3:15) %>% 
+    group_by(k) %>% 
+    do(
+        kmeans(select(scaled_capes, -Sigla, -Programa), 
+               centers = .$k, 
+               nstart = 20) %>% glance()
+    )
+
+explorando_k %>% 
+    ggplot(aes(x = k, y = tot.withinss)) + 
+    geom_line() + 
+    geom_point()
+```
+Podemos ver na visualização acima vários indicativos para K. A priori, escolheremos k=8.
+
+```{r}
+k_means_result <- kmeans(scaled_capes[3:7], centers = 8, nstart = 20)
+aggregate(scaled_capes[3:7],by=list(k_means_result$cluster),FUN=median)
+scaled_capes_cluster <- data.frame(scaled_capes[3:7], k_means_result$cluster)
+clusplot(scaled_capes_cluster, k_means_result$cluster, color=TRUE, shade=TRUE, 
+  	labels=2, lines=0)
+```
+
+```{r}
+scaled_capes_cluster$.row <- rownames(scaled_capes_cluster)
+  teste <- melt(scaled_capes_cluster, id = c(".row", "k_means_result.cluster") )
+
+parallel_plot = ggplot(teste, aes(x = variable, y = value, group = .row, colour = k_means_result.cluster)) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 0)) +
+    geom_line(alpha = .2) + 
+    facet_wrap(~ k_means_result.cluster)
+ggplotly(parallel_plot)
+```
+
+
+###MISSING ANALYSIS
+
+
+##MISSING DIMENSION REDUCTION
