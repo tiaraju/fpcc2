@@ -1,10 +1,10 @@
 ---
-title: "lab03_03"
+title: "lab03 Checkpoint 3"
 output: html_notebook
 ---
 
 
-##Bibliotecas que usaremos
+##1.Bibliotecas que usaremos
 
 Aqui importamos as bibliotecas que usaremos
 ```{r echo=FALSE}
@@ -23,7 +23,7 @@ library(ggbiplot)
 
 ```
 
-##Dados
+##2.Dados
 Os dados em questão aqui são dados disponibilizados pela CAPES, utilizados na avaliação de cursos de pós-graduação das universidades brasileiras.
 
 Vamos carregar e observar o dataset disponibilizado:
@@ -55,11 +55,12 @@ scaled_capes = filtered_capes %>% mutate_at(vars(`Nível`:periodicos_A1), funs(a
 
 
 ```
+Temos acima os histogramas das variáveis presentes no dataset disponibilzado. Podemos perceber alguns padrões de grupos em algumas delas. Mas nada que, a priori, chame muito a atenção. Todas parecem ter maior concentração à esquerda, com uma calda relativamente longa, padrão bastante comum para esse tipo de dado.
 
 Analisando as variáveis, escolhemos para o agrupamento, as seguintes:
 
-- docentes ( docentes_colaboradores + docentes permanentes + docentes visitantes)
-- trabalhos_produzidos ( teses + dissertações)
+- docentes ( docentes_colaboradores + docentes permanentes + docentes visitantes). Condensamos aqui três variáveis presentes no dataset em apenas uma.
+- trabalhos_produzidos ( teses + dissertações). Dessa vez, condesamos duas variáveis. Consideraremos o total de trabalhos produzidos pelo programa, ao invés de fragmentá-lo por curso.
 - Nível
 - Artigos em conferencia
 - periodicos_A1
@@ -71,40 +72,29 @@ cor(filtered_capes %>% select(-Programa, -Sigla)) %>% corrplot(method = "number"
 
 ```
 
-Podemos perceber uma forte correlação entre as variáveis, sendo a menor delas entre o número de docentes e o nível do programa de 0.67, que pode ser considerada alta.
+Podemos perceber uma forte correlação entre as variáveis, sendo a menor delas entre o número de docentes e o nível do programa de 0.67, entre docentes e Nível, que apesar de ser a mais baixa encontrada, ainda pode ser considerada alta.
 
-##Agrupamento
+##3.Agrupamento
 
 Uma vez escolhida as variáveis para o agrupamento, partimos para tal:
 
-Primeiramente vamos estimar um número de grupos para o K-means
+Primeiramente vamos estimar um número K de grupos para o K-means
 ```{r}
 
 # Determine number of clusters
-wss <- (nrow(scaled_capes[3:7])-1)*sum(apply(scaled_capes[3:7],2,var))
+wss <- (nrow(scaled_capes[3:7]))*sum(apply(scaled_capes[3:7],2,var))
 for (i in 2:15) wss[i] <- sum(kmeans(scaled_capes[3:7], 
   	centers=i)$withinss)
 plot(1:15, wss, type="b", xlab="Number of Clusters",
   ylab="Within groups sum of squares")
 
-set.seed(123)
-explorando_k = tibble(k = 3:15) %>% 
-    group_by(k) %>% 
-    do(
-        kmeans(select(scaled_capes, -Sigla, -Programa), 
-               centers = .$k, 
-               nstart = 20) %>% glance()
-    )
-
-explorando_k %>% 
-    ggplot(aes(x = k, y = tot.withinss)) + 
-    geom_line() + 
-    geom_point()
 ```
-Podemos ver na visualização acima vários indicativos para K. A priori, escolheremos k=8.
+Observando o gráfico acima, percebemos que a partir de 3 clusters a diferença não é tão grande quanto a diferença de 1 para 2 e de 2 para 3.
+Logo, escolheremos K=3 para nossa análise.
+É importante salientar aqui que os dados foram normalizados para o agrupamento, evitando assim que uma variável tenha um peso signficativamente maior que outra de maneira indevida.
 
 ```{r}
-k_means_result <- kmeans(scaled_capes[3:7], centers = 8, nstart = 20)
+k_means_result <- kmeans(scaled_capes[3:7], centers = 3, nstart = 20)
 aggregate(scaled_capes[3:7],by=list(k_means_result$cluster),FUN=median)
 scaled_capes_cluster <- data.frame(scaled_capes[3:7], k_means_result$cluster)
 clusplot(scaled_capes_cluster, k_means_result$cluster, color=TRUE, shade=TRUE, 
@@ -122,28 +112,33 @@ parallel_plot = ggplot(teste, aes(x = variable, y = value, group = .row, colour 
 ggplotly(parallel_plot)
 ```
 
+Uma vez executado o agrupamento para um k=3, percebemos a presença de grupos que, intuitivamente, fazem sentido. 
+Podemos classificar informalmente os grupos como:
 
-###MISSING ANALYSIS
+1. Programas de nível baixo
+2. Programas de nível médio
+3. Programas de nivel alto
 
+Mais especificamente, para o primeiro grupo, observamos em geral:
+Nível baixo, baixo número médio de docentes, baixo número de artigos em conferências como também de trabalhos produzidos e publicos em eventos classificados como A1 pela CAPES.
+Esse é o grupo com maior número de programas.
 
-##Redução de Dimensionalidade
+Para o segundo grupo percebemos um padrão mais mediano, um pouco acima da média. A variável que mais se destaca, devido ao comportamento relativamente diferente das demais, é o nível, onde percebemos um nível maior que as demais.
+
+Já o terceiro grupo apresenta alguns poucos programas de pós-graduação. Percebemos que eles variam entre si, mas possuem valores consideravelmente altos para todas as variáveis.
+
+##4.Redução de Dimensionalidade
 
 Dado que em nosso agrupamento consideramos 5 variáveis, precisamos de uma maneira legal de visualizar isso, uma vez que temos uma limitação que não nos permite visualizar as 5 facilmente. Para isso, faremos uso de redução de dimensionalidade.
 
-Para tal, utilizaremos a técnica PCA(principal component analysis)
+Para tal, utilizaremos a técnica PCA(principal component analysis) de modo que possamos vizualizar, em um plano 2D, a influência das variáveis.
+
 
 ```{r}
-ppg.pca <- prcomp(scaled_capes[3:7],center = TRUE) 
-print(ppg.pca)
-plot(ppg.pca, type = "l")
-```
-
-
-##ANALYSIS
-
-```{r}
-ppg.groups = scaled_capes[2, 6] #fit.cluster column
-pca_plot <- ggbiplot(ppg.pca, obs.scale = 1, var.scale = 1, 
+pca_data <- prcomp(scaled_capes[3:7],center = TRUE) 
+scaled_capes <- data.frame(scaled_capes[3:7], k_means_result$cluster)
+ppg.groups = scaled_capes[, 6] 
+pca_plot <- ggbiplot(pca_data, obs.scale = 1, var.scale = 1, 
               groups = ppg.groups, ellipse = TRUE, 
               circle = FALSE) + 
   scale_color_continuous(name = '') + 
@@ -152,6 +147,12 @@ pca_plot <- ggbiplot(ppg.pca, obs.scale = 1, var.scale = 1,
 print(pca_plot)
 ```
 
+O resultado nos motra, circulado por elipses e de cores diferentes, os grupos classificados.
+Percebemos aqui uma coerência dos grupos formados, dado o posicionamento dos pontos, mesmo reduzindo para duas dimensões.
+Analisando o resultado, podemos validar, como visto anteriormente, a alta correlação entre as variáveis escolhidas no agrupamento.
+Percebemos também que o componente 1 representa em 84% os nossos dados, valor bem alto. Isso pode ter sido alcançado justamente pelo quase alinhamento de 4 das variáveis com o eixo X, como também  pela alta correlação entre as variáveis.
+
+Das variáveis, a que mais difere da direção das demais é a variável Nível, que, provavelmente, garante boa parte dos 7.4% explicado pelo PC2.
 
 
 

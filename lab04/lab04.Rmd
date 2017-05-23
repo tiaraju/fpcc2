@@ -18,7 +18,19 @@ github = github %>%
                   week_day = lubridate::wday(date),
                   is_weekend = if_else(week_day %in% c(1,7), TRUE, FALSE))
 
+github %>% gather(key = "variavel", value = "valor", -file_extension) %>% 
+    ggplot(aes(x = valor)) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_wrap(~ variavel, scales = "free_x", ncol=7)
 ```
+Podemos perceber uma uniformidade na variável date.
+
+Para o ano, percebemos a maior frequência no ano de 2016, o que era esperado, dado que ainda estamos pouco antes da metade de 2017.
+
+Em relação aos dias da semana, percebemos maior popularidade para o inicio da semana (segunda e terça) e uma queda a partir de quarta.
+
+Em relação ao mês, percebemos maior frequência nos primeiros mêses. Todavia, isso mais uma vez é devido ao fato de ainda estarmos no meio de 2017.
 
 
 #As perguntas
@@ -30,9 +42,9 @@ github = github %>%
 2.Existe uma diferença significativa na variação da popularidade das duas quando você compara o quanto a popularidade de cada uma varia durante os dias da semana?
 
 
-# Respondendo a Primeira questão
+## Respondendo a primeira questão
 
-## 1.Para cada uma delas, há uma diferença significativa na sua popularidade durante a semana e durante o fim de semana? 
+### 1.Para cada uma delas, há uma diferença significativa na sua popularidade durante a semana e durante o fim de semana? 
 
 Decidimos selecionar as linguagens python e javascript.
 
@@ -46,8 +58,8 @@ Para evitar influência de possíveis outliers, utilizaremos a mediana como medi
 py = github %>% filter(file_extension %in% c("py"))
 js = github %>% filter(file_extension %in% c("js"))
 
-py %>% ggplot(aes(x=py$users)) + geom_histogram(bins=20) + labs(x="Users")
-js %>% ggplot(aes(x=js$users)) + geom_histogram(bins=20) + labs(x="Users")
+py %>% ggplot(aes(x=py$users)) + geom_histogram(bins=20) + labs(x="Users") + ggtitle("Python")  + theme(plot.title = element_text(hjust = 0.5))
+js %>% ggplot(aes(x=js$users)) + geom_histogram(bins=20) + labs(x="Users") + ggtitle("Javascript") + theme(plot.title = element_text(hjust = 0.5))
 
 ```
 
@@ -86,12 +98,11 @@ data.frame(rbind(js_week_CI, js_weekend_CI)) %>%
  
  
 ```
-Percebemos que....
+Com as visualizações acima, podemos afirmar  que, com 95% de confiança,  tanto para Python, quanto para Javascript **HÁ** uma diferença significativa em sua respectiva popularidade durante a semana e fim de semana, dado que os intervalos não se sobrepõem em nenhum dos casos. 
 
+Toda via, a análise feita acima é boa para distinguir se há ou não significativa diferença entre a popularidade da linguagem no fim de semana e dia de semana ( e foi verificado que há), mas não para ter ideia de quão diferente é.
 
-
-Toda via, a analise feita acima é boa para comparar que há significativa diferença entre a popularidade da linguagem no fim de semana e dia de semana, mas não para ter ideia de quão diferente é.
-Para sabermos mensurar a diferença, usaremos a diferença da mediana de uma amostra com a outra (dia de semana, e fim de semana) a cada iteração do bootstrap.
+Para sabermos mensurar a diferença, usaremos a diferença da mediana das amostras (dia de semana, e fim de semana) a cada iteração do bootstrap.
 
 Para tal, faremos:
 
@@ -122,10 +133,13 @@ data.frame(js_diff_CI) %>%
 
 
 ```
+Observando os intervalos acima, podemos agora afirmar e verificar o quão diferente é a diferença da popularidade das linguagens em dias de semana vs fim de semana.
 
+Podemos ainda afirmar que nos dois casos a popularidade da linguagem é maior durante os dias de semana, e com 95% de confiança podemos afirmar que está no intervalo de:
 
-#TODO argumentar aqui
+Para Javascript : [2677, 3042].
 
+Para Python : [2062, 2234].
 
 
 #Respondendo a segunda pergunta
