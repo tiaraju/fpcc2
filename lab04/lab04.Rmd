@@ -1,0 +1,123 @@
+---
+title: "lab04_01"
+output: html_notebook
+---
+
+## Os dados
+
+```{r}
+library(devtools)
+library(tidyverse)
+library(GGally)
+library(resample)
+
+github = read_csv("dados/github-users-committing-filetypes.csv")
+
+github = github %>% 
+    mutate(date = lubridate::ymd(paste(the_year, the_month, month_day)), 
+                  week_day = lubridate::wday(date),
+                  is_weekend = if_else(week_day %in% c(1,7), TRUE, FALSE))
+
+```
+
+
+#As perguntas
+
+###As duas perguntas que buscaremos responder são:
+
+1.Para cada uma delas, há uma diferença significativa na sua popularidade durante a semana e durante o fim de semana? 
+
+2.Existe uma diferença significativa na variação da popularidade das duas quando você compara o quanto a popularidade de cada uma varia durante os dias da semana?
+
+
+# Respondendo a Primeira questão
+
+Decidimos selecionar as linguagens python e javascript.
+
+Para responder a primeira pergunta, analisaremos a priori, separadamente, python.
+
+Primeiramente, analisando a variável números de usuário, percembos que não há enviesamento da distribuição para python. Já para Javascript percebemos uma cauda à esquerda.
+Para evitar influência de possíveis outliers, utilizaremos a mediana como medida de sumarização.
+
+
+```{r}
+py = github %>% filter(file_extension %in% c("py"))
+js = github %>% filter(file_extension %in% c("js"))
+
+py %>% ggplot(aes(x=py$users)) + geom_histogram(bins=20) + labs(x="Users")
+js %>% ggplot(aes(x=js$users)) + geom_histogram(bins=20) + labs(x="Users")
+
+```
+
+Vamos agora realizar o bootstrap separadamente dos dois grupos(dia de semana e fim de semana) que desejamos analisar.
+```{r}
+
+#python
+py_weekend = py %>% filter(is_weekend==TRUE)
+py_week = py %>% filter(is_weekend==FALSE)
+
+py_weekend_median = py_weekend$users %>% bootstrap(statistic=median)
+py_week_median = py_week$users %>% bootstrap(statistic=median)
+
+py_week_CI = CI.percentile(py_week_median, probs=c(.025, .975))
+
+py_weekend_CI = CI.percentile(py_weekend_median, probs=c(.025, .975))
+
+data.frame(rbind(py_week_CI, py_weekend_CI)) %>% 
+   ggplot(aes(x= c("Weekdays", "Weekend"), ymin = X2.5., ymax = X97.5.)) + 
+  geom_errorbar(width = .2) + ggtitle("Python") + theme(plot.title = element_text(hjust = 0.5)) + labs(x="")
+
+#javascript
+js_weekend = js %>% filter(is_weekend==TRUE)
+js_week = js %>% filter(is_weekend==FALSE)
+
+js_weekend_median = js_weekend$users %>% bootstrap(statistic=median)
+js_week_median = js_week$users %>% bootstrap(statistic=median)
+
+js_week_CI = CI.percentile(js_week_median, probs=c(.025, .975))
+
+js_weekend_CI = CI.percentile(js_weekend_median, probs=c(.025, .975))
+
+data.frame(rbind(js_week_CI, js_weekend_CI)) %>% 
+   ggplot(aes(x= c("Weekdays", "Weekend"), ymin = X2.5., ymax = X97.5.)) + 
+  geom_errorbar(width = .2) + ggtitle("Javascript") + theme(plot.title = element_text(hjust = 0.5)) + labs(x="")
+ 
+ 
+```
+Percebemos que....
+
+
+
+Toda via, a analise feita acima é boa para comparar que há significativa diferença entre a popularidade da linguagem no fim de semana e dia de semana, mas não para ter ideia de quão diferente é.
+Para sabermos mensurar a diferença, usaremos a diferença da mediana de uma amostra com a outra (dia de semana, e fim de semana) a cada iteração do bootstrap.
+
+Para tal, faremos:
+
+```{r}
+
+py_diff_median = py$users %>% bootstrap2(statistic=median,
+                                         treatment=py$is_weekend)
+
+py_diff_CI = CI.percentile(py_diff_median, probs=c(.025, .975))
+
+data.frame(py_diff_CI) %>% 
+   ggplot(aes(x= "Diferença", ymin = X2.5., ymax = X97.5.)) + 
+   geom_errorbar(width = .2) + ggtitle("Python") + theme(plot.title = element_text(hjust = 0.5)) +
+   geom_hline(yintercept = 0, colour = "darkorange")
+
+
+#javascript
+
+js_diff_median = js$users %>% bootstrap2(statistic=median,
+                                         treatment=js$is_weekend)
+
+js_diff_CI = CI.percentile(js_diff_median, probs=c(.025, .975))
+
+data.frame(js_diff_CI) %>% 
+   ggplot(aes(x= "Diferença", ymin = X2.5., ymax = X97.5.)) + 
+   geom_errorbar(width = .2) + ggtitle("Javascript") + theme(plot.title = element_text(hjust = 0.5))+
+   geom_hline(yintercept = 0, colour = "darkorange")
+
+
+```
+
