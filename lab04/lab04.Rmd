@@ -32,6 +32,8 @@ github = github %>%
 
 # Respondendo a Primeira questão
 
+## 1.Para cada uma delas, há uma diferença significativa na sua popularidade durante a semana e durante o fim de semana? 
+
 Decidimos selecionar as linguagens python e javascript.
 
 Para responder a primeira pergunta, analisaremos a priori, separadamente, python.
@@ -118,6 +120,33 @@ data.frame(js_diff_CI) %>%
    geom_errorbar(width = .2) + ggtitle("Javascript") + theme(plot.title = element_text(hjust = 0.5))+
    geom_hline(yintercept = 0, colour = "darkorange")
 
+
+```
+
+
+#TODO argumentar aqui
+
+
+
+#Respondendo a segunda pergunta
+
+
+##2.Existe uma diferença significativa na variação da popularidade das duas quando você compara o quanto a popularidade de cada uma varia durante os dias da semana?
+
+
+Para responder tal pergunta, necessitamos dos dados das linguagens python e javascript.
+```{r}
+py_js = github %>% filter(file_extension %in% c("js", "py"), week_day %in%c(2:6))
+
+py_js_diff_sd = py_js$users %>% bootstrap2(statistic=sd,
+                                         treatment=py_js$file_extension)
+
+py_js_diff_CI = CI.percentile(py_js_diff_sd, probs=c(.025, .975))
+
+data.frame(py_js_diff_CI) %>% 
+   ggplot(aes(x= "Diferença", ymin = X2.5., ymax = X97.5.)) + 
+   geom_errorbar(width = .2) + theme(plot.title = element_text(hjust = 0.5)) +
+   geom_hline(yintercept = 0, colour = "darkorange")
 
 ```
 
