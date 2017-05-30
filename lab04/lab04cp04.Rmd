@@ -1,0 +1,63 @@
+---
+title: "lab04CP04"
+output: html_notebook
+---
+# Sobre o LAB
+
+Nesse Checkpoint foi solicitado que escolhêssemos duas perguntas, das formuladas no checkpoint 2, para responder com base no dataset fornecido para o lab 4.
+
+As perguntas escolhidas foram:
+
+#### 1) Para uma dada linguagem escolhida, há diferença de popularidade entre o primeiro e o segundo semestre do ano de 2016?
+#### 2) Comparando os 3 primeiros meses de 2016 e 2017, há diferença significativa da popularidade de uma certa linguagem?
+
+
+
+# Os dados
+
+```{r}
+library(devtools)
+library(tidyverse)
+library(GGally)
+library(resample)
+
+github = read_csv("dados/github-users-committing-filetypes.csv")
+
+github = github %>% 
+    mutate(date = lubridate::ymd(paste(the_year, the_month, month_day)), 
+                  week_day = lubridate::wday(date),
+                  is_weekend = if_else(week_day %in% c(1,7), TRUE, FALSE))
+
+github %>% gather(key = "variavel", value = "valor", -file_extension) %>% 
+    ggplot(aes(x = valor)) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_wrap(~ variavel, scales = "free_x", ncol=7)
+
+```
+Podemos perceber uma uniformidade na variável date.
+
+Para o ano, percebemos a maior frequência no ano de 2016, o que era esperado, dado que ainda estamos pouco antes da metade de 2017.
+
+Em relação aos dias da semana, percebemos maior popularidade para o inicio da semana (segunda e terça) e uma queda a partir de quarta.
+
+Em relação ao mês, percebemos maior frequência nos primeiros mêses. Todavia, isso mais uma vez é devido ao fato de ainda estarmos no meio de 2017.
+
+
+#As perguntas
+
+Respondendo as perguntas:
+
+### 1) Para uma dada linguagem escolhida, há diferença de popularidade entre o primeiro e o segundo semestre do ano de 2016?
+
+A linguagem escolhida para responder a primeira pergunta foi JAVA.
+
+Para respondê-la, primeiramente vamos selecionar o dataset adequado por semestre.
+
+```{r}
+java_2016_1 = github %>% filter(file_extension %in% c("java"), the_year==2016, the_month<=6)
+java_2016_2 = github %>% filter(file_extension %in% c("java"), the_year==2016, the_month>6)
+
+
+```
+
