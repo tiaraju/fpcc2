@@ -1,5 +1,5 @@
 ---
-title: "lab04CP04"
+title: "Lab04CP04"
 output: html_notebook
 ---
 # Sobre o LAB
@@ -59,5 +59,114 @@ java_2016_1 = github %>% filter(file_extension %in% c("java"), the_year==2016, t
 java_2016_2 = github %>% filter(file_extension %in% c("java"), the_year==2016, the_month>6)
 
 
+java_2016_1 %>% ggplot(aes(x=java_2016_1$users)) + geom_histogram(bins=20) + labs(x="Users") + ggtitle("Primeiro Semestre")  + theme(plot.title = element_text(hjust = 0.5))
+
+java_2016_2 %>% ggplot(aes(x=java_2016_2$users)) + geom_histogram(bins=20) + labs(x="Users") + ggtitle("Segundo Semestre") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
+Analisando os histogramas acima podemos perceber uma diferença entre as distribuições para os dois períodos do ano de 2016.
+Todavia, precisamos de métodos mais precisos para avaliar se a diferença é significativa e, em caso positivo, o quão grande é essa diferença.
+
+Partindo para a técnica de bootstrap, vamos analisar, primeiramente, se há uma diferença significativa:
+
+
+```{r}
+java_2016_1 = java_2016_1$users %>% bootstrap(statistic=median)
+java_2016_2 = java_2016_2$users %>% bootstrap(statistic=median)
+
+java_2016_1 = CI.percentile(java_2016_1, probs=c(.025, .975))
+java_2016_2 = CI.percentile(java_2016_2, probs=c(.025, .975))
+
+
+data.frame(rbind(java_2016_1, java_2016_2)) %>% 
+   ggplot(aes(x= c("Primeiro Semestre", "Segundo Semestre"), ymin = X2.5., ymax = X97.5.)) + 
+  geom_errorbar(width = .2) + ggtitle("Java 2016") + theme(plot.title = element_text(hjust = 0.5)) + labs(x="")
+```
+
+Podemos perceber, analisando a visualização acima, que há, com 95% de confiança, uma diferença significativa entre a popularidade da linguagem Java, uma vez que os intervalos não se sobrepõem.
+
+Agora, para analisarmos o quão diferente é a popularidade entre os dois períodos do ano de 2016, para os usuários de java, faremos:
+
+```{r}
+
+java_2016 = github %>% filter(file_extension %in% c("java"), the_year==2016) %>% mutate(is_second_semester=the_month>6)
+
+java_2016_median = java_2016$users %>% bootstrap2(statistic=median,
+                                         treatment=java_2016$is_second_semester)
+
+java_2016_CI = CI.percentile(java_2016_median, probs=c(.025, .975))
+
+data.frame(java_2016_CI) %>% 
+   ggplot(aes(x= "Diferença \n2016.2 - 2016.1", ymin = X2.5., ymax = X97.5.)) + 
+   geom_errorbar(width = .2) + ggtitle("Diferença de popularidade em Semestres de 2016") + theme(plot.title = element_text(hjust = 0.5)) +
+   geom_hline(yintercept = 0, colour = "darkorange")
+```
+
+Agora podemos quantificar a diferença da popularidade de Java entre os dois semestres de 2016.
+Com a visualização acima podemos afirmar, com 95% de confiança, que a diferença de popularidade entre o segundo e o primeiro semestre ( nessa ordem) está entre : 414.5 e 713.8355.
+
+
+Agora partiremos para a segunda pergunta.
+
+### 2) Comparando os 3 primeiros meses de 2016 e 2017, há diferença significativa da popularidade de uma certa linguagem?
+
+Escolheremos novamente Java como nosso objeto de análise
+
+Primeiramente, como sabemos que o ano de 2017 ainda é corrente, vamos verificar se temos dados de todo o primeiro trimestre.
+
+```{r}
+github %>% filter(the_year==2017) %>% ggplot(aes(x=the_month)) + geom_histogram(bins=20) + labs(x="months")
+```
+Podemos ver que temos dados até o mês 5. Logo, nossa análise para o primeiro trimestre é válida.
+
+Vamos à ela:
+
+```{r}
+java_2016_3 = github %>% filter(file_extension %in% c("java"), the_year==2016, the_month<=3)
+java_2017_3 = github %>% filter(file_extension %in% c("java"), the_year==2017, the_month<=3)
+
+
+java_2016_3 %>% ggplot(aes(x=java_2016_3$users)) + geom_histogram(bins=20) + labs(x="Users") + ggtitle("Primeiro Trimestre 2016")  + theme(plot.title = element_text(hjust = 0.5))
+
+java_2017_3 %>% ggplot(aes(x=java_2017_3$users)) + geom_histogram(bins=20) + labs(x="Users") + ggtitle("Primeiro Trimestre 2017") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+Vemos aqui que o primeiro trimestre de 2016, aparentemente, possui maior popularidade. Mas, como não somos bons em comparar áreas, vamos utilzar um método mais preciso.
+
+
+```{r}
+java_2016_3 = java_2016_3$users %>% bootstrap(statistic=median)
+java_2017_3 = java_2017_3$users %>% bootstrap(statistic=median)
+
+java_2016_3 = CI.percentile(java_2016_3, probs=c(.025, .975))
+java_2017_3 = CI.percentile(java_2017_3, probs=c(.025, .975))
+
+
+data.frame(rbind(java_2016_3, java_2017_3)) %>% 
+   ggplot(aes(x= c("Primeiro Trimestre 2016", "Primeiro Trimestre 2017"), ymin = X2.5., ymax = X97.5.)) + 
+  geom_errorbar(width = .2) + ggtitle("Java 2016/2017") + theme(plot.title = element_text(hjust = 0.5)) + labs(x="")
+```
+
+Observando a visualização acima, podemos afimar, com 95% de confiança, que há uma diferença signficativa entre a popularidade de java no primeiro trimestre de 2016 e o primeiro trimestre de 2017. Podemos ainda afirmar, com 95% de confiança, que java é mais popular no primeiro trimestre de 2016. 
+
+Todavia, o método acima não nos permite afirmar qual a diferença entre a popularidade do primeiro trimestre de 2016 com o primeiro trimestre de 2017.
+
+Para tal, faremos:
+
+```{r}
+java_subset = github %>% filter(file_extension %in% c("java"), the_month<=3)
+
+java_trimestrial_median = java_subset$users %>% bootstrap2(statistic=median,
+                                         treatment=java_subset$the_year)
+
+java_trimestrial_CI = CI.percentile(java_trimestrial_median, probs=c(.025, .975))
+
+data.frame(java_trimestrial_CI) %>% 
+   ggplot(aes(x= "Diferença Primerio Trimestre\n2016 - 2017", ymin = X2.5., ymax = X97.5.)) + 
+   geom_errorbar(width = .2) + ggtitle("Diferença de Popularidade de Java Entre Primeiros Trimestres") + theme(plot.title = element_text(hjust = 0.5)) +
+   geom_hline(yintercept = 0, colour = "darkorange")
+```
+
+A primeira observação a ser feita aqui é que temos apenas dados de 2016 e 2017(pode ser verificado no início do relatório), por isso podemos filtrar, a priori, apenas pelo mês para responder nossa questão.
+
+Uma vez dito isso, analisando a visualização acima, podemos afirmar que a diferença de popularidade de Java para o primeiro trimestre de 2016 - o primeiro trimestre de 2017 está, com 95% de confiança, entre: 213.5 e 633.4073.
