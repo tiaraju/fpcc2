@@ -1,0 +1,29 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r echo=FALSE}
+require(tidyverse) # ggplot2, tidyr, dplyr, etc
+require(broom) # facilita lidar com modelos e trata o resultado do kmeans como modelo
+require(ggfortify, quietly = TRUE) # plots para modelos
+require(GGally, quietly = TRUE)
+require(knitr, quietly = TRUE)
+require(cluster)
+require(ggdendro)
+require(corrplot)
+require(reshape2)
+require(plotly)
+library(devtools)
+library(ggbiplot)
+```
+
+
+```{r}
+signatures = read_csv("dados//signatures.csv")
+
+signatures %>% mutate(features_mean=rowMeans(signatures[,3:12]))
+
+
+```
+
