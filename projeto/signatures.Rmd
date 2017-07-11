@@ -32,33 +32,26 @@ signatures$diff_8 = signatures$m9 - signatures$m1
 signatures$diff_9 = signatures$m10 - signatures$m1
 
 
-signatures[3:7] %>% 
+analysis =signatures[13:17] %>% 
   gather(key = "variavel", value = "valor") %>%
-  ggplot(aes(x = log(valor))) + 
+  ggplot(aes(x = valor)) + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
     facet_grid(. ~ variavel, scales = "free_x")
 
-signatures[8:12] %>% 
+analysis2 = signatures[18:21] %>% 
   gather(key = "variavel", value = "valor") %>%
-  ggplot(aes(x = log(valor))) + 
+  ggplot(aes(x = valor)) + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
     facet_grid(. ~ variavel, scales = "free_x")
 
-signatures[13:17] %>% 
-  gather(key = "variavel", value = "valor") %>%
-  ggplot(aes(x = log(valor))) + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
-    facet_grid(. ~ variavel, scales = "free_x")
+print(analysis)
+ggsave("analysis.pdf", width = 6, height = 4) # ggsave precisa que a figura tenha sido impressa em um dispositivo de saída antes
+print(analysis2)
+ggsave("analysis2.pdf", width = 6, height = 4) # ggsave precisa que a figura tenha sido impressa em um dispositivo de saída antes
 
-signatures[18:21] %>% 
-  gather(key = "variavel", value = "valor") %>%
-  ggplot(aes(x = log(valor))) + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
-    facet_grid(. ~ variavel, scales = "free_x")
+
 
 
 ```
@@ -68,8 +61,14 @@ signatures[18:21] %>%
 wss <- (nrow(signatures[13:21]))*sum(apply(signatures[13:21],2,var))
 for (i in 2:15) wss[i] <- sum(kmeans(signatures[13:21], 
   	centers=i)$withinss)
-plot(1:15, wss, type="b", xlab="Number of Clusters",
-  ylab="Within groups sum of squares")
+ #plot(1:15, wss, type="b", xlab="Number of Clusters222",
+  #ylab="Within groups sum of squares")
+ 
+ p = ggplot(mapping=(aes(x=1:15,y=wss/10e6))) + geom_point() + 
+  geom_line() + labs(x="Number of Clusters", y="Within groups sum of squares x 10e6")
+   print(p)
+   ggsave("number_of_groups.pdf", width = 6, height = 4) # ggsave precisa que a figura tenha sido impressa em um dispositivo de saída antes
+
 ```
 
 
@@ -81,7 +80,7 @@ clusplot(grouped_signatures, k_means_result$cluster, color=TRUE, shade=TRUE,
   	labels=2, lines=0)
 ```
 
-s
+
 
 ```{r}
 grouped_signatures$.row <- rownames(grouped_signatures)
@@ -90,7 +89,12 @@ grouped_signatures$.row <- rownames(grouped_signatures)
 parallel_plot = ggplot(teste, aes(x = variable, y = value, group = .row, colour = k_means_result.cluster)) + 
     theme(axis.text.x = element_text(angle = 45, hjust = 0)) +
     geom_line(alpha = .2) + 
-    facet_wrap(~ k_means_result.cluster)
-ggplotly(parallel_plot)
+    facet_wrap(~ k_means_result.cluster)+
+  labs(x="Differential points", y="Active Power", colour="Groups")
+
+print(parallel_plot)
+ggsave("4groups.pdf", width = 6, height = 4) # ggsave precisa que a figura tenha sido impressa em um dispositivo de saída antes
+
+#ggplotly(parallel_plot)
 ```
 
