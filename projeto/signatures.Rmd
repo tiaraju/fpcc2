@@ -21,9 +21,76 @@ library(ggbiplot)
 
 ```{r}
 signatures = read_csv("dados//signatures.csv")
+signatures$diff_1 = signatures$m2 - signatures$m1
+signatures$diff_2 = signatures$m3 - signatures$m1
+signatures$diff_3 = signatures$m4 - signatures$m1
+signatures$diff_4 = signatures$m5 - signatures$m1
+signatures$diff_5 = signatures$m6 - signatures$m1
+signatures$diff_6 = signatures$m7 - signatures$m1
+signatures$diff_7 = signatures$m8 - signatures$m1
+signatures$diff_8 = signatures$m9 - signatures$m1
+signatures$diff_9 = signatures$m10 - signatures$m1
 
-signatures %>% mutate(features_mean=rowMeans(signatures[,3:12]))
+
+signatures[3:7] %>% 
+  gather(key = "variavel", value = "valor") %>%
+  ggplot(aes(x = log(valor))) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_grid(. ~ variavel, scales = "free_x")
+
+signatures[8:12] %>% 
+  gather(key = "variavel", value = "valor") %>%
+  ggplot(aes(x = log(valor))) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_grid(. ~ variavel, scales = "free_x")
+
+signatures[13:17] %>% 
+  gather(key = "variavel", value = "valor") %>%
+  ggplot(aes(x = log(valor))) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_grid(. ~ variavel, scales = "free_x")
+
+signatures[18:21] %>% 
+  gather(key = "variavel", value = "valor") %>%
+  ggplot(aes(x = log(valor))) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_histogram(fill = "lightyellow", color = "black", bins = 20) + 
+    facet_grid(. ~ variavel, scales = "free_x")
 
 
+```
+
+```{r}
+# Determine number of clusters
+wss <- (nrow(signatures[13:21]))*sum(apply(signatures[13:21],2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(signatures[13:21], 
+  	centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+  ylab="Within groups sum of squares")
+```
+
+
+```{r}
+k_means_result <- kmeans(signatures[13:21], centers = 4, nstart = 20)
+aggregate(signatures[13:21],by=list(k_means_result$cluster),FUN=mean)
+grouped_signatures <- data.frame(signatures[13:21], k_means_result$cluster)
+clusplot(grouped_signatures, k_means_result$cluster, color=TRUE, shade=TRUE, 
+  	labels=2, lines=0)
+```
+
+s
+
+```{r}
+grouped_signatures$.row <- rownames(grouped_signatures)
+  teste <- melt(grouped_signatures, id = c(".row", "k_means_result.cluster") )
+
+parallel_plot = ggplot(teste, aes(x = variable, y = value, group = .row, colour = k_means_result.cluster)) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 0)) +
+    geom_line(alpha = .2) + 
+    facet_wrap(~ k_means_result.cluster)
+ggplotly(parallel_plot)
 ```
 
